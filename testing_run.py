@@ -4,11 +4,20 @@
 #
 # just a python script to test the running of stuff
 
-from stafft import *
+from spectral import *
 
-factors, trig = initfft(128)
+nx = 128
+ny = 64
+ellx = 6.28318530717958647692
+elly = 3.14159265358979323846
 
-print(factors)
-for i in range(len(trig)):
-  print("%.10f" % trig[i])
+init_spectral()
+
+#factors, trig = initfft(n)
+
+#print(trig)
+
+#x = forfft(m, n, trig, factors)
+
+#print(x)
 

@@ -62,7 +62,7 @@
 # [Here, for even n, nw=n/2, and for odd n, nw=(n-1)/2].
 
 from sys import exit
-from numpy import array, zeros, pi, sin, cos, mod
+from numpy import array, zeros, pi, sin, cos, mod, sqrt
 
 #----------------------------
 def initfft(n):
@@ -178,16 +178,25 @@ def factorisen(n):
 
 #============================================
 
-#subroutine forfft(m,n,x,trig,factors)
+def forfft(m, n, x, trig, factors):
+  """
+  Main physical to spectral (forward) FFT routine. 
+  Performs m transforms of length n in the array x which is dimensioned x(m,n).
+  The arrays trig and factors are filled by the init routine and 
+  should be kept from call to call.
+  Backend consists of mixed-radix routines, with 'decimation in time'.
+  Transform is stored in Hermitian form.
 
-## Main physical to spectral (forward) FFT routine. 
-## Performs m transforms of length n in the array x which is dimensioned x(m,n).
-## The arrays trig and factors are filled by the init routine and 
-## should be kept from call to call.
-## Backend consists of mixed-radix routines, with 'decimation in time'.
-## Transform is stored in Hermitian form.
-
-#implicit none
+  Input:
+    m       =
+    n       =
+    x       = input array
+    trig    =
+    factors =
+  
+  Returns:
+    xhat    = transformed array
+  """
 
 # #Arguments declarations:
 #double precision:: x(0:m*n-1),trig(0:2*n-1) 
@@ -198,12 +207,28 @@ def factorisen(n):
 #integer:: i,rem,cum,iloc
 #logical:: orig
 
-##--------------------------------------
-# #Initialise flip/flop logical and counters
-#orig=.true.
-#rem=n
-#cum=1
-# #Use factors of 5:
+  # Initialise flip/flop logical and counters
+  orig = True
+  rem  = n
+  cum  = 1
+  # Use factors of 5:
+  for i in range(int(factors[4])):
+    rem /= 5
+    iloc = int((rem - 1) * 5 * cum)
+    if orig:
+      print("orig")
+      print(trig[iloc])
+      print(trig[n + iloc])
+      x, wk = forrdx5(int(m * rem), cum, trig[iloc], trig[n + iloc])
+    else:
+      print("not orig")
+      print(trig[iloc])
+      print(trig[n + iloc])
+      wk, x = forrdx5(int(m * rem), cum, trig[iloc], trig[n + iloc])
+    orig = not orig
+    cum *= 5
+    
+
 #do i=1,factors(5)
 #  rem=rem/5
 #  iloc=(rem-1)*5*cum
@@ -264,21 +289,16 @@ def factorisen(n):
 #  cum=cum*6
 #enddo
 
-# #Multiply by the normalisation constant and put
-# #transformed array in the right location:
-#normfac=1.0d0/sqrt(dble(n))
-#if (orig) then
-#  do i=0,m*n-1
-#    x(i)=x(i)*normfac
-#  enddo
-#else
-#  do i=0,m*n-1
-#    x(i)=wk(i)*normfac
-#  enddo
-#endif
+  # Multiply by the normalisation constant and put
+  # transformed array in the right location:
+  normfac = 1.0 / sqrt(n)
+  if (orig):
+    xhat = x  * normfac
+  else:
+    xhat = wk * normfac
+  
+  return xhat
 
-#return
-#end subroutine
 ##=====================================================
 
 #subroutine revfft(m,n,x,trig,factors)
@@ -739,147 +759,153 @@ def factorisen(n):
 #return
 #end subroutine
 ##================================================
-#subroutine forrdx5(a,b,nv,lv,cosine,sine)
 
-## Radix five physical to Hermitian FFT with 'decimation in time'.
+def forrdx5(nv, lv, cosine, sine):
+  """
+  Radix five physical to Hermitian FFT with 'decimation in time'.
+  
+  Input: TO ADD
+    nv      =
+    lv      =
+    cosine  =
+    sine    =
+  
+  Returns: TO ADD
+    a       =
+    b       =
+  """
+  # define some parameters and variables
+  rtf516  = 0.5590169943749474241022934171828190588601545899028814310677243113526302   
+  sinf2pi5= 0.9510565162951535721164393333793821434056986341257502224473056444301532
+  sinfpi5 = 0.5877852522924731291687059546390727685976524376431459910722724807572785
+  sinrat  = 0.6180339887498948482045868343656381177203091798057628621354486227052605
 
-#implicit none
+  a = zeros((nv, 5, lv))
+  b = zeros((nv, lv, 5))
 
-# #Arguments declarations:
-#integer:: nv,lv
-#double precision:: a(0:nv-1,0:4,0:lv-1),b(0:nv-1,0:lv-1,0:4),cosine(0:lv-1,1:4),sine(0:lv-1,1:4)
-# #Local declarations:
-#double precision,parameter:: rtf516=0.5590169943749474241022934171828190588601545899028814310677243113526302d0
-#double precision,parameter:: sinf2pi5=0.9510565162951535721164393333793821434056986341257502224473056444301532d0
-#double precision,parameter:: sinfpi5=0.5877852522924731291687059546390727685976524376431459910722724807572785d0
-#double precision,parameter:: sinrat=0.6180339887498948482045868343656381177203091798057628621354486227052605d0
-#double precision:: x1p,x2p,x3p,x4p,y1p,y2p,y3p,y4p
-#double precision:: s1k,s2k,s3k,s4k,c1k,c2k,c3k,c4k
-#double precision:: t1i,t1r,t2i,t2r,t3i,t3r,t4i,t4r,t5i,t5r,t6i,t6r
-#double precision:: t7i,t7r,t8i,t8r,t9i,t9r,t10i,t10r,t11i,t11r
-#integer:: i,k,kc
+  # Do k=0 first:
+  for i in range(nv):
+    t1r = a[i, 1, 0] + a[i, 4, 0]
+    t2r = a[i, 2, 0] + a[i, 3, 0]
+    t3r = sinf2pi5 * (a[i, 4, 0] - a[i, 1, 0])
+    t4r = sinf2pi5 * (a[i, 2, 0] - a[i, 3, 0])
+    t5r = t1r + t2r
+    t6r = rtf516 * (t1r - t2r)
+    t7r = a[i, 0, 0] - 0.25 * t5r
+    
+    b[i, 0, 0] = a[i, 0, 0] + t5r
+    b[i, 0, 1] = t7r + t6r
+    b[i, 0, 2] = t7r - t6r
+    b[i, 0, 3] = t4r + sinrat * t3r
+    b[i, 0, 4] = t3r - sinrat * t4r
 
-##--------------------------------------------------
-# #Do k=0 first:
-#do i=0,nv-1
-#  t1r=a(i,1,0)+a(i,4,0)
-#  t2r=a(i,2,0)+a(i,3,0)
-#  t3r=sinf2pi5*(a(i,4,0)-a(i,1,0))
-#  t4r=sinf2pi5*(a(i,2,0)-a(i,3,0))
-#  t5r=t1r+t2r
-#  t6r=rtf516*(t1r-t2r)
-#  t7r=a(i,0,0)-0.25d0*t5r
-#  b(i,0,0)=a(i,0,0)+t5r
-#  b(i,0,1)=t7r+t6r
-#  b(i,0,2)=t7r-t6r
-#  b(i,0,3)=t4r+sinrat*t3r
-#  b(i,0,4)=t3r-sinrat*t4r
-#enddo
-# #Next do remaining k:
-#if (nv .le. (lv-1)/2) then
-#  do i=0,nv-1
-#    do k=1,(lv-1)/2
-#      kc=lv-k
-#      x1p=cosine(k,1)*a(i,1, k)-sine(k,1)*a(i,1,kc)
-#      y1p=cosine(k,1)*a(i,1,kc)+sine(k,1)*a(i,1, k)
-#      x2p=cosine(k,2)*a(i,2, k)-sine(k,2)*a(i,2,kc)
-#      y2p=cosine(k,2)*a(i,2,kc)+sine(k,2)*a(i,2, k)
-#      x3p=cosine(k,3)*a(i,3, k)-sine(k,3)*a(i,3,kc)
-#      y3p=cosine(k,3)*a(i,3,kc)+sine(k,3)*a(i,3, k)
-#      x4p=cosine(k,4)*a(i,4, k)-sine(k,4)*a(i,4,kc)
-#      y4p=cosine(k,4)*a(i,4,kc)+sine(k,4)*a(i,4, k)
-#      t1r=x1p+x4p
-#      t1i=y1p+y4p
-#      t2r=x2p+x3p
-#      t2i=y2p+y3p
-#      t3r=sinf2pi5*(x1p-x4p)
-#      t3i=sinf2pi5*(y1p-y4p)
-#      t4r=sinf2pi5*(x2p-x3p)
-#      t4i=sinf2pi5*(y2p-y3p)
-#      t5r=t1r+t2r
-#      t5i=t1i+t2i
-#      t6r=rtf516*(t1r-t2r)
-#      t6i=rtf516*(t1i-t2i)
-#      t7r=a(i,0,k)-0.25d0*t5r
-#      t7i=a(i,0,kc)-0.25d0*t5i
-#      t8r=t7r+t6r
-#      t8i=t7i+t6i
-#      t9r=t7r-t6r
-#      t9i=t7i-t6i
-#      t10r=t3r+sinrat*t4r
-#      t10i=t3i+sinrat*t4i
-#      t11r=t4r-sinrat*t3r
-#      t11i=sinrat*t3i-t4i
-#      b(i, k,0)=a(i,0,k)+t5r
-#      b(i,kc,0)=t8r-t10i
-#      b(i, k,1)=t8r+t10i
-#      b(i,kc,1)=t9r-t11i
-#      b(i, k,2)=t9r+t11i
-#      b(i,kc,2)=t9i+t11r
-#      b(i, k,3)=t11r-t9i
-#      b(i,kc,3)=t8i-t10r
-#      b(i, k,4)=-t8i-t10r
-#      b(i,kc,4)=a(i,0,kc)+t5i
-#    enddo
-#  enddo
-#else
-#  do k=1,(lv-1)/2
-#    kc=lv-k
-#    c1k=cosine(k,1)
-#    s1k=sine(k,1)
-#    c2k=cosine(k,2)
-#    s2k=sine(k,2)
-#    c3k=cosine(k,3)
-#    s3k=sine(k,3)
-#    c4k=cosine(k,4)
-#    s4k=sine(k,4)
-#    do i=0,nv-1
-#      x1p=c1k*a(i,1, k)-s1k*a(i,1,kc)
-#      y1p=c1k*a(i,1,kc)+s1k*a(i,1, k)
-#      x2p=c2k*a(i,2, k)-s2k*a(i,2,kc)
-#      y2p=c2k*a(i,2,kc)+s2k*a(i,2, k)
-#      x3p=c3k*a(i,3, k)-s3k*a(i,3,kc)
-#      y3p=c3k*a(i,3,kc)+s3k*a(i,3, k)
-#      x4p=c4k*a(i,4, k)-s4k*a(i,4,kc)
-#      y4p=c4k*a(i,4,kc)+s4k*a(i,4, k)
-#      t1r=x1p+x4p
-#      t1i=y1p+y4p
-#      t2r=x2p+x3p
-#      t2i=y2p+y3p
-#      t3r=sinf2pi5*(x1p-x4p)
-#      t3i=sinf2pi5*(y1p-y4p)
-#      t4r=sinf2pi5*(x2p-x3p)
-#      t4i=sinf2pi5*(y2p-y3p)
-#      t5r=t1r+t2r
-#      t5i=t1i+t2i
-#      t6r=rtf516*(t1r-t2r)
-#      t6i=rtf516*(t1i-t2i)
-#      t7r=a(i,0,k)-0.25d0*t5r
-#      t7i=a(i,0,kc)-0.25d0*t5i
-#      t8r=t7r+t6r
-#      t8i=t7i+t6i
-#      t9r=t7r-t6r
-#      t9i=t7i-t6i
-#      t10r=t3r+sinrat*t4r
-#      t10i=t3i+sinrat*t4i
-#      t11r=t4r-sinrat*t3r
-#      t11i=sinrat*t3i-t4i
-#      b(i, k,0)=a(i,0,k)+t5r
-#      b(i,kc,0)=t8r-t10i
-#      b(i, k,1)=t8r+t10i
-#      b(i,kc,1)=t9r-t11i
-#      b(i, k,2)=t9r+t11i
-#      b(i,kc,2)=t9i+t11r
-#      b(i, k,3)=t11r-t9i
-#      b(i,kc,3)=t8i-t10r
-#      b(i, k,4)=-t8i-t10r
-#      b(i,kc,4)=a(i,0,kc)+t5i
-#    enddo
-#  enddo
-#endif
-
-#return
-#end subroutine
+  # Next do remaining k:
+  if (nv < (lv - 1) / 2):
+    for i in range(nv):
+      for k in range(1, int((lv - 1) / 2) + 1):
+        kc = lv - k
+        print("%.3f, %.3f, %.3f" % (kc, lv, k) )
+        print(cosine)
+        print(a[i, 1, k])
+        print(sine[k, 0])
+        print(a[i, 1, kc])
+        x1p = cosine[k, 0] * a[i, 1, k ] - sine[k, 0] * a[i, 1, kc]
+        y1p = cosine[k, 0] * a[i, 1, kc] + sine[k, 0] * a[i, 1, k ]
+        x2p = cosine[k, 1] * a[i, 2, k ] - sine[k, 1] * a[i, 2, kc]
+        y2p = cosine[k, 1] * a[i, 2, kc] + sine[k, 1] * a[i, 2, k ]
+        x3p = cosine[k, 2] * a[i, 3, k ] - sine[k, 2] * a[i, 3, kc]
+        y3p = cosine[k, 2] * a[i, 3, kc] + sine[k, 2] * a[i, 3, k ]
+        x4p = cosine[k, 3] * a[i, 4, k ] - sine[k, 3] * a[i, 4, kc]
+        y4p = cosine[k, 3] * a[i, 4, kc] + sine[k, 3] * a[i, 4, k ]
+        t1r = x1p + x4p
+        t1i = y1p + y4p
+        t2r = x2p + x3p
+        t2i = y2p + y3p
+        t3r = sinf2pi5 * (x1p - x4p)
+        t3i = sinf2pi5 * (y1p - y4p)
+        t4r = sinf2pi5 * (x2p - x3p)
+        t4i = sinf2pi5 * (y2p - y3p)
+        t5r = t1r + t2r
+        t5i = t1i + t2i
+        t6r = rtf516 * (t1r - t2r)
+        t6i = rtf516 * (t1i - t2i)
+        t7r = a[i, 0, k ] - 0.25 * t5r
+        t7i = a[i, 0, kc] - 0.25 * t5i
+        t8r = t7r + t6r
+        t8i = t7i + t6i
+        t9r = t7r - t6r
+        t9i = t7i - t6i
+        t10r = t3r + sinrat * t4r
+        t10i = t3i + sinrat * t4i
+        t11r = t4r - sinrat * t3r
+        t11i = sinrat * t3i - t4i
+        
+        b[i,  k, 0] = a[i, 0, k ] + t5r
+        b[i, kc, 0] = t8r  - t10i
+        b[i,  k, 1] = t8r  + t10i
+        b[i, kc, 1] = t9r  - t11i
+        b[i,  k, 2] = t9r  + t11i
+        b[i, kc, 2] = t9i  + t11r
+        b[i,  k, 3] = t11r - t9i
+        b[i, kc, 3] = t8i  - t10r
+        b[i,  k, 4] = -t8i - t10r
+        b[i, kc, 4] = a[i, 0, kc] + t5i
+  else:
+    for k in range(1, int((lv - 1) / 2) + 1):
+      kc = lv - k
+      c1k = cosine[k, 0]
+      s1k = sine[k, 0]
+      c2k = cosine[k, 1]
+      s2k = sine[k, 1]
+      c3k = cosine[k, 2]
+      s3k = sine[k, 2]
+      c4k = cosine[k, 3]
+      s4k = sine[k, 3]
+      for i in range(nv):
+        x1p = c1k * a[i, 1,  k] - s1k * a[i, 1, kc]
+        y1p = c1k * a[i, 1, kc] + s1k * a[i, 1,  k]
+        x2p = c2k * a[i, 2,  k] - s2k * a[i, 2, kc]
+        y2p = c2k * a[i, 2, kc] + s2k * a[i, 2,  k]
+        x3p = c3k * a[i, 3,  k] - s3k * a[i, 3, kc]
+        y3p = c3k * a[i, 3, kc] + s3k * a[i, 3,  k]
+        x4p = c4k * a[i, 4,  k] - s4k * a[i, 4, kc]
+        y4p = c4k * a[i, 4, kc] + s4k * a[i, 4,  k]
+        t1r = x1p + x4p
+        t1i = y1p + y4p
+        t2r = x2p + x3p
+        t2i = y2p + y3p
+        t3r = sinf2pi5 * (x1p - x4p)
+        t3i = sinf2pi5 * (y1p - y4p)
+        t4r = sinf2pi5 * (x2p - x3p)
+        t4i = sinf2pi5 * (y2p - y3p)
+        t5r = t1r + t2r
+        t5i = t1i + t2i
+        t6r = rtf516 * (t1r - t2r)
+        t6i = rtf516 * (t1i - t2i)
+        t7r = a[i, 0, k ] - 0.25 * t5r
+        t7i = a[i, 0, kc] - 0.25 * t5i
+        t8r = t7r + t6r
+        t8i = t7i + t6i
+        t9r = t7r - t6r
+        t9i = t7i - t6i
+        t10r = t3r + sinrat * t4r
+        t10i = t3i + sinrat * t4i
+        t11r = t4r - sinrat * t3r
+        t11i = sinrat * t3i - t4i
+        
+        b[i,  k, 0] = a[i, 0, k ] + t5r
+        b[i, kc, 0] =  t8r - t10i
+        b[i,  k, 1] =  t8r + t10i
+        b[i, kc, 1] =  t9r - t11i
+        b[i,  k, 2] =  t9r + t11i
+        b[i, kc, 2] =  t9i + t11r
+        b[i,  k, 3] = t11r - t9i
+        b[i, kc, 3] =  t8i - t10r
+        b[i,  k, 4] = -t8i - t10r
+        b[i, kc, 4] = a[i, 0, kc] + t5i
+        
+    return (a, b)
+        
 ##===========================================
 #subroutine forrdx4(a,b,nv,lv,cosine,sine)
 
