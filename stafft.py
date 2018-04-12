@@ -106,7 +106,7 @@ def initfft(n):
   for i in range(5):
     for j in range(int(factors[i])):
       rem /= fac[i]
-      for k in range(fac[i] - 1):
+      for k in range(1, fac[i]):
         for l in range(int(rem)):
           trig[m] = ftwopin * (k * l)
           m += 1
@@ -117,24 +117,6 @@ def initfft(n):
     trig[i  ] =  cos(trig[i])
     
   return (factors, trig)
-
-#do i=1,5
-#  do j=1,factors(i)
-#    rem=rem/fac(i)
-#    do k=1,fac(i)-1
-#      do l=0,rem-1
-#        trig(m)=ftwopin*dble(k*l)
-#        m=m+1
-#      enddo
-#    enddo
-#    ftwopin=ftwopin*fac(i)
-#  enddo
-#enddo
-
-#do i=1,n-1 
-#  trig(n+i)=-sin(trig(i))
-#  trig(i)  = cos(trig(i))
-#enddo
 
 #============================================
 
