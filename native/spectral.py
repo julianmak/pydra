@@ -9,7 +9,7 @@ from constants import *
 # from generic import *
 from sta2dfft import *
 
-from numpy import arange, zeros, pi, exp
+from numpy import arange, zeros, pi, exp, sqrt, around, log10
 
 # define some parameters
 nwx = int(nx / 2)
@@ -55,40 +55,40 @@ def init_spectral():
   wraty = rky / rkymax
   frky[1:ny] = rky[1:ny] * exp(-36.0 * wraty[1:ny] ** 36.0)
   
-  for i in range(len(frky)):
-    print("%.10f" % frky[i])
-  
-#!----------------------------------------------------------------------
-# !Initialise arrays for computing the spectrum of any field:
-#delk=sqrt(scx**2+scy**2)
-#delki=one/delk
-#kmax=nint(sqrt(rkxmax**2+rkymax**2)*delki)
-#do k=0,kmax
-#  spmf(k)=zero
-#enddo
-#do kx=0,nxm1
-#  k=nint(rkx(kx)*delki)
-#  kmag(kx,0)=k
-#  spmf(k)=spmf(k)+one
-#enddo
-#do ky=1,ny
-#  do kx=0,nxm1
-#    k=nint(sqrt(rkx(kx)**2+rky(ky)**2)*delki)
-#    kmag(kx,ky)=k
-#    spmf(k)=spmf(k)+one
-#  enddo
-#enddo
-# !Compute spectrum multiplication factor (spmf) to account for unevenly
-# !sampled shells and normalise spectra by 8/(nx*ny) so that the sum
-# !of the spectrum is equal to the L2 norm of the original field:
-#snorm=four*pi/dble(nx*ny)
-#spmf(0)=zero
-#do k=1,kmax
-#  spmf(k)=snorm*dble(k)/spmf(k)
-#  alk(k)=log10(delk*dble(k))
-#enddo
-# !Only output shells which are fully occupied (k <= kmaxred):
-#kmaxred=nint(sqrt((rkxmax**2+rkymax**2)/two)*delki)
+  #----------------------------------------------------------------------
+  # Initialise arrays for computing the spectrum of any field:
+  delk  = sqrt(scx ** 2 + scy ** 2)
+  delki = 1.0 / delk
+  kmax  = around( sqrt(rkxmax ** 2 + rkymax ** 2) * delki )
+  spmf  = zeros(max(nx + 1, ny + 1))
+  kmag  = zeros((nx, ny))
+  alk   = zeros(max(nx, ny))
+  for kx in range(nx):
+    k = int( around(rkx[kx] * delki) )
+    kmag[kx, 0] = k
+    spmf[k] += 1
+    
+  for ky in range(ny):
+    for kx in range(nx):
+      k = int(  around( sqrt(rkx[kx] ** 2 + rky[ky] ** 2) * delki )  )
+      kmag[kx, ky] = k
+      spmf[k] += 1
+
+#  for i in range(len(spmf)):
+#    print("%.10f" % spmf[i])
+#    print("%13.2f" % spmf[i])
+      
+  # Compute spectrum multiplication factor (spmf) to account for unevenly
+  # sampled shells and normalise spectra by 8/(nx*ny) so that the sum
+  # of the spectrum is equal to the L2 norm of the original field:
+  snorm = 4.0 * pi / (nx * ny)
+  spmf[0] = 0.0
+  for k in range(1, int(kmax + 1)):
+    spmf[k] = snorm * k / spmf[k]
+    alk[k]  = log10(delk * k)
+      
+  # Only output shells which are fully occupied (k <= kmaxred):
+  kmaxred = around(  sqrt( (rkxmax ** 2 + rkymax ** 2) / 2.0 ) *delki  )
 
 #!----------------------------------------------------------------------
 # !Define inverse spectral inversion operators:
