@@ -1,0 +1,39 @@
+pydra development notes -- Julian Mak
+
+%%%%%%%%%%%%% 16 Apr 2018 %%%%%%%%%%%%%
+
+Misc dump:
+
+* try using f2py to wrap the basic inversion functions, but do the post-analysis
+  in python
+      
+  ?? not sure what happens with constants and so forth, check this
+     
+  ?? still need to add in which variables are in/out/both...
+  
+  -- f2py works on the laptop
+     -- from terminal it is something like
+     
+     f2py -m $MODULE_NAME -c $FILES_TO_INCLUDE
+     
+     which spits out "MODULE_NAME.so"
+     
+     -- e.g. "invert" subroutine in module "spectral" in spectral.f90 is
+     
+     from MODULE_NAME import *
+     spectral.invert()
+     
+     and so forth
+     
+     -- e.g. MODULE_NAME.so compiled with "spectral" and "generic" would have
+     
+     MODULE_NAME.spectral
+     MODULE_NAME.generic
+     
+     and appropriate subfunctions
+
+* started on a native translation of the relevant routines in hydra (Fortran)
+  into python
+  -- need to work out what variables are in, out or in/out!
+  -- BE CAREFUL OF INDEXING!
+  -- reduce the number of loops if possible
