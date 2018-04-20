@@ -1,0 +1,29 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module murp ! in 
+    interface  ! in :murp
+        module test_mod ! in :murp:test_mod.f90
+            subroutine print_murp(n) ! in :murp:test_mod.f90:test_mod
+                real intent(in) :: n
+            end subroutine print_murp
+            subroutine add_murp(n,m,p) ! in :murp:test_mod.f90:test_mod
+                real intent(in) :: n
+                real intent(in) :: m
+                real intent(out) :: p
+            end subroutine add_murp
+            subroutine self_murp(n) ! in :murp:test_mod.f90:test_mod
+                real intent(in,out) :: n
+            end subroutine self_murp
+            subroutine multiple_murp(n,m,p,q) ! in :murp:test_mod.f90:test_mod
+                real intent(in) :: n
+                real intent(in) :: m
+                real intent(out) :: p
+                real intent(out) :: q
+            end subroutine multiple_murp
+        end module test_mod
+    end interface 
+end python module murp
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/

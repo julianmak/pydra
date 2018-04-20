@@ -1,5 +1,66 @@
 pydra development notes -- Julian Mak
 
+* test for the interface aspect with
+  
+  f2py -m $MODULE_NAME -h SOMETHING.pfy <LIST OF FORTRAN SOURCE FILES>
+  
+* compile with
+
+  f2py -m $MODULE_NAME -c <LIST OF FORTRAN SOURCE FILES>
+  
+  -- ordering does matter! the ones that others depend on should come LEFT on
+     the list
+
+%%%%%%%%%%%%% 20 Apr 2018 %%%%%%%%%%%%%
+
+* testing main_invert in spectral
+  -- spitting out uniform numbers?
+     -- qgop2 = 0 for all?
+        -- "init_spectral" not called, so it's undefined
+        -- added "call init_spectral" within "main_invert" and now it fixes that
+           zeroes problem
+  -- seems to now have fixed it
+
+  -- wrote a read program to read in the qq1/2 data
+  
+  -- f2py compiles it and calling is ok
+     -- added intents in
+
+%%%%%%%%%%%%% 19 Apr 2018 %%%%%%%%%%%%%
+
+Notes to do with f2py
+
+? probably now only (?) need to add in intents for "main_invert"?
+
+* seems to compile now!
+
+  f2py -m testing -c f90_mod/parameters.f90 f90_mod/constants.f90 f90_mod/stafft.f90 f90_mod/sta2dfft.f90 f90_mod/generic.f90 f90_mod/spectral.f90
+
+* error with variables being undefined
+  -- looks like "use constants" does not automatically load "parameters" where
+     the variables are defined, i.e. no inheritance
+     -- fixed by adding "use parameters" before "use constants" as well
+    
+
+* kicking up an error in parameters.f90 and constants.f90
+  -- reading error?
+  -- can remove it by getting rid of the "d0" suffixes at the end of numbers
+     -- or change it to "e"
+
+* the modules that just define parameters seems to just compile, e.g.:
+
+  f2py -m murp -c parameters.f90 constants.f90
+  
+  will compile a murp with two objects, "murp.parameters" and "murp.constants"
+  that have the relevant variables in
+
+* subroutines will need to be modified so that the intent is specified. Do this
+  with
+  
+  !f2py intent(in/out/in,out) :: variable
+  
+  as appropriate
+
 %%%%%%%%%%%%% 16 Apr 2018 %%%%%%%%%%%%%
 
 Misc dump:
