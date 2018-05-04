@@ -2,11 +2,13 @@
 #
 # JM, 20 Apr 2018
 #
-# some subfunctions to read data
+# some misc functions relating to pydra
 
 import os
 from numpy import fromfile, float32, delete, zeros
 
+#-------------------------------------------------------------------------------
+# read the PV data
 def read_qq(data_dir, nx, ny, kt):
 
   """
@@ -58,3 +60,25 @@ def read_qq(data_dir, nx, ny, kt):
   qq2_file.close()
   
   return (t_now, qq)
+  
+#-------------------------------------------------------------------------------
+# transform between layer fields to modal fields
+
+def layers_to_modes(field_top, field_low, constants):
+
+  """
+  Subfunction to transform layer fields to modal fields
+  
+  Input:
+    field_top   2d field of top layer
+    field_low   2d field of lower layer
+  
+  Output:
+    field_bt    2d field of barotropic mode
+    field_bc    2d field of baroclinic mode
+  """
+  
+  field_bt = constants.vec11 * field_top + constants.vec12 * field_low
+  field_bc = constants.vec21 * field_top + constants.vec22 * field_low
+  
+  return (field_bt, field_bc)
