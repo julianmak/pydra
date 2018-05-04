@@ -9,7 +9,7 @@ from numpy import fromfile, float32, delete, zeros
 
 #-------------------------------------------------------------------------------
 # read the PV data
-def read_qq(data_dir, nx, ny, kt):
+def read_qq(data_dir, nx, ny, kt, num_frame = False):
 
   """
   Subfunction to read the PV data (assumes they are called qq1 and qq2)
@@ -35,7 +35,8 @@ def read_qq(data_dir, nx, ny, kt):
   file_bytes = os.path.getsize(qq1_filename)
   nframes = int(file_bytes / (4 * N))
 
-  print("number of frames found = %i " % nframes)
+  if num_frame:
+    print("number of frames found = %i " % nframes)
 
   raw_array = fromfile(qq1_file, dtype = float32)
   time_eles = [i * N for i in range(nframes)]
