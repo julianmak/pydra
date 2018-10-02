@@ -2,9 +2,10 @@
 #
 # JM, 20 Apr 2018
 #
-# some subfunctions to average things
+# some subfunctions to do analysis of pydra data
 
 from numpy import zeros, mean
+from numpy.fft import rfft, irfft
 
 #-------------------------------------------------------------------------------
 def zonal_ave(infield):
@@ -150,8 +151,32 @@ def zonal_ens_int(q1_in, q2_in, parameters):
   
   return ens_domavg
   
-
-
+#-------------------------------------------------------------------------------
+def zonal_mode_extract(infield, mode_keep, low_pass = False):
+  """
+  Subfunction to extract or swipe out zonal modes (mode_keep) of (y, x) data.
+  Assumes here that the data is periodic in axis = 1 (in the x-direction) with
+  the end point missing
+  
+  If mode_keep = 0 then this is just the zonal averaged field
+  
+  Input:
+    in_field    2d layer input field
+    mode_keep   the zonal mode of the data to be extracted from
+    
+  Opt input:
+    low_pass    get rid of all modes from mode_keep + 1 onwards
+  
+  Output:
+    outfield    zonal mode of the data
+  """
+  
+  outfield_h = rfft(infield, axis = 1)
+  outfield_h[:, mode_keep+1::] = 0
+  if not low_pass:
+    outfield_h[:, 0:mode_keep] = 0
+  
+  return irfft(outfield_h, axis = 1)
 
 
 
