@@ -88,19 +88,17 @@ def calc_geom_momentum(data_dir, parameters, constants, kt):
   M_btbc = np.zeros(uu_btbc.shape)
   N_btbc = np.zeros(uu_btbc.shape)
   
-  zonal_demean(vv[:, :, 0])
-  
   M_L1L2[:, :, 0] = (zonal_corr(vv[:, :, 0], vv[:, :, 0])
-                   - zonal_corr(uu[:, :, 0], uu[:, :, 0]))
+                   - zonal_corr(uu[:, :, 0], uu[:, :, 0])) / 2.0
   M_L1L2[:, :, 1] = (zonal_corr(vv[:, :, 1], vv[:, :, 1])
-                   - zonal_corr(uu[:, :, 1], uu[:, :, 1]))
+                   - zonal_corr(uu[:, :, 1], uu[:, :, 1])) / 2.0
   N_L1L2[:, :, 0] =  zonal_corr(vv[:, :, 0], uu[:, :, 0])
   N_L1L2[:, :, 1] =  zonal_corr(vv[:, :, 1], uu[:, :, 1])
   
   M_btbc[:, :, 0] = (zonal_corr(vv_btbc[:, :, 0], vv_btbc[:, :, 0])
-                   - zonal_corr(uu_btbc[:, :, 0], uu_btbc[:, :, 0]))
+                   - zonal_corr(uu_btbc[:, :, 0], uu_btbc[:, :, 0])) / 2.0
   M_btbc[:, :, 1] = (zonal_corr(vv_btbc[:, :, 1], vv_btbc[:, :, 1])
-                   - zonal_corr(uu_btbc[:, :, 1], uu_btbc[:, :, 1]))
+                   - zonal_corr(uu_btbc[:, :, 1], uu_btbc[:, :, 1])) / 2.0
   N_btbc[:, :, 0] =  zonal_corr(vv_btbc[:, :, 0], uu_btbc[:, :, 0])
   N_btbc[:, :, 1] =  zonal_corr(vv_btbc[:, :, 1], uu_btbc[:, :, 1])
 
