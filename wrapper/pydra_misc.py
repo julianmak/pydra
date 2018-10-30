@@ -50,14 +50,15 @@ def read_qq(data_dir, nx, ny, kt, num_frame = False):
   t_now = raw_array[time_eles[kt]]
 
   # pull out the data relevant to time and reshape
-  qq[:, :, 0] = raw_array[index_start:index_end].reshape((nx, ny + 1))
+  # note the flipped index
+  qq[:, :, 1] = raw_array[index_start:index_end].reshape((nx, ny + 1))
   
   qq1_file.close()
   
   qq2_filename = data_dir + "qq2.r4"
   qq2_file = open(qq2_filename, "r")
   raw_array = np.fromfile(qq2_file, dtype = np.float32)
-  qq[:, :, 1] = raw_array[index_start:index_end].reshape((nx, ny + 1))
+  qq[:, :, 0] = raw_array[index_start:index_end].reshape((nx, ny + 1))
   
   qq2_file.close()
   
@@ -79,11 +80,11 @@ def layers_to_modes(field_L1L2, constants):
   """
   
   field_btbc = np.zeros(field_L1L2.shape)
-  
-  field_btbc[:, :, 0] = (constants.vec11 * field_L1L2[:, :, 0] 
-                       + constants.vec12 * field_L1L2[:, :, 1])
-  field_btbc[:, :, 1] = (constants.vec21 * field_L1L2[:, :, 0] 
-                       + constants.vec22 * field_L1L2[:, :, 1])
+  # note the flipped indices because of read_qq4
+  field_btbc[:, :, 0] = (constants.vec11 * field_L1L2[:, :, 1] 
+                       + constants.vec12 * field_L1L2[:, :, 0])
+  field_btbc[:, :, 1] = (constants.vec21 * field_L1L2[:, :, 1] 
+                       + constants.vec22 * field_L1L2[:, :, 0])
 
   return field_btbc
   
@@ -171,7 +172,7 @@ def zonal_eke(u_in, v_in):
   return eke
   
 #-------------------------------------------------------------------------------
-def zonal_eke_int(u1_in, v1_in, u2_in, v2_in, parameters):
+def zonal_eke_int(uu_in, vv_in, parameters): # don't think this is right, redo this
   """
   Subfunction to compute the domain-averaged eke value, where the
   eke is defined by the zonal average (give it the layer velocity though)
@@ -185,11 +186,12 @@ def zonal_eke_int(u1_in, v1_in, u2_in, v2_in, parameters):
     (TODO: eke_max?)
   """
   # work out the eke of layers then weight it with layer depth (which is 1)
-  eke1 = zonal_eke(u1_in, v1_in) * parameters.h1
-  eke2 = zonal_eke(u2_in, v2_in) * (1 - parameters.h1)
+  # note the flipped parameters
+  eke = (zonal_eke(uu_in[:, :, 0], vv_in[:, :, 0]) * (1 - parameters.h1)
+      +  zonal_eke(uu_in[:, :, 1], vv_in[:, :, 1]) * parameters.h1)
   
   # add them together and take a mean (divide by depth = 1 not written in)
-  eke_domavg = np.mean(np.mean(eke1 + eke2, axis = 0), axis = 0)
+  eke_domavg = np.mean(np.mean(eke, axis = 0), axis = 0)
   
   return eke_domavg
   
@@ -210,7 +212,7 @@ def zonal_ens(q_in):
   return ens
 
 #-------------------------------------------------------------------------------
-def zonal_ens_int(q1_in, q2_in, parameters):
+def zonal_ens_int(qq_in, parameters): # don't think this is right, redo this
   """
   Subfunction to compute the domain-averaged ens value, where the
   ens is defined by the zonal average (give it the layer PV though)
@@ -224,11 +226,11 @@ def zonal_ens_int(q1_in, q2_in, parameters):
     (TODO: ens_max?)
   """
   # work out the eke of layers then weight it with layer depth (which is 1)
-  ens1 = zonal_ens(q1_in) * parameters.h1
-  ens2 = zonal_ens(q2_in) * (1 - parameters.h1)
+  ens = (zonal_ens(qq_in[:, : ,0]) * (1 - parameters.h1)
+      +  zonal_ens(qq_in[:, :, 1]) * parameters.h1)
   
   # add them together and take a mean (divide by depth = 1 not written in)
-  ens_domavg = np.mean(np.mean(ens1 + ens2, axis = 0), axis = 0)
+  ens_domavg = np.mean(np.mean(ens, axis = 0), axis = 0)
   
   return ens_domavg
   
