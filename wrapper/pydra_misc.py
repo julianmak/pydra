@@ -119,6 +119,9 @@ def zonal_demean(infield):
   mean_1d = zonal_ave(infield)
   outfield = np.zeros(infield.shape)
   
+  if infield.shape[1] < 10:
+    print("WARNING: x-axis should be longer than this, check you are throwing in arrays of the right shape!")
+  
   for i in range(infield.shape[1]):
     outfield[:, i] = infield[:, i] - mean_1d # probably a faster way of doing this (broadcast?)
   

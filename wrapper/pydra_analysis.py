@@ -52,11 +52,11 @@ def calc_eke(data_dir, parameters, constants, kt):
 #-------------------------------------------------------------------------------
 # generate the M and N
 
-def calc_geom_momentum(data_dir, parameters, constants, kt):
+def calc_MN_noavg(data_dir, parameters, constants, kt):
 
   """
-  Subfunction to generate M = <v'v' - u'u'> / 2 and N = <u'v'> 
-  (using zonal mean)
+  Subfunction to generate M = (v'v' - u'u') / 2 and N = u'v' (prime being 
+  deviation from zonal mean here)
   
   Input:
     data_dir    data directory
@@ -104,9 +104,47 @@ def calc_geom_momentum(data_dir, parameters, constants, kt):
 
   return (M_L1L2, N_L1L2, M_btbc, N_btbc)
 
+#-------------------------------------------------------------------------------
+# generate gamma_m and phi_m
 
+def calc_geom_mom(data_dir, parameters, constants, kt):
+  """
+  Subfunction to generate 
+  
+    gamma_m = sqrt(M^2 + N^2) / K 
+  
+  and 
+  
+    cos 2 phi_m = - M / sqrt(M^2 + N^2)
+    
+  where M, N and K are now averaged (otherwise gamma_m is identically one for 
+  example).
+  
+  Input:
+    data_dir    data directory
+    parameters  parameter module from load
+    constants   constants module from load
+    kt          time stamp
+  
+  Output:
+    gamma_m_L1L2    1d field of gamma_m in layers
+    gamma_m_btbc    1d field of gamma_m in modes
+  """
+  
+  K_L1L2, K_btbc = calc_eke(data_dir, parameters, constants, kt)
+  M_L1L2, N_L1L2, M_btbc, N_btbc = calc_MN_noavg(data_dir, parameters, constants, kt)
+  
+  gamma_m_L1L2 = (np.sqrt(zonal_ave(M_L1L2) ** 2 + zonal_ave(N_L1L2) ** 2)
+                / np.maximum(zonal_ave(K_L1L2), 1e-16))
+  gamma_m_btbc = (np.sqrt(zonal_ave(M_btbc) ** 2 + zonal_ave(N_btbc) ** 2)
+                / np.maximum(zonal_ave(K_btbc), 1e-16))
+                
+  phi_m_L1L2   =  0.5 * np.arccos(-zonal_ave(M_L1L2) 
+                / np.maximum(np.sqrt(zonal_ave(M_L1L2) ** 2 + zonal_ave(N_L1L2) ** 2), 1e-16))
+  phi_m_btbc   =  0.5 * np.arccos(-zonal_ave(M_btbc) 
+                / np.maximum(np.sqrt(zonal_ave(M_btbc) ** 2 + zonal_ave(N_btbc) ** 2), 1e-16))
 
-
+  return (gamma_m_L1L2, phi_m_L1L2, gamma_m_btbc, phi_m_btbc)
 
 
 
