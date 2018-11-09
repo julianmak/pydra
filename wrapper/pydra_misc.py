@@ -50,15 +50,14 @@ def read_qq(data_dir, nx, ny, kt, num_frame = False):
   t_now = raw_array[time_eles[kt]]
 
   # pull out the data relevant to time and reshape
-  # note the flipped index
-  qq[:, :, 1] = raw_array[index_start:index_end].reshape((nx, ny + 1))
+  qq[:, :, 0] = raw_array[index_start:index_end].reshape((nx, ny + 1))
   
   qq1_file.close()
   
   qq2_filename = data_dir + "qq2.r4"
   qq2_file = open(qq2_filename, "r")
   raw_array = np.fromfile(qq2_file, dtype = np.float32)
-  qq[:, :, 0] = raw_array[index_start:index_end].reshape((nx, ny + 1))
+  qq[:, :, 1] = raw_array[index_start:index_end].reshape((nx, ny + 1))
   
   qq2_file.close()
   
@@ -80,11 +79,10 @@ def layers_to_modes(field_L1L2, constants):
   """
   
   field_btbc = np.zeros(field_L1L2.shape)
-  # note the flipped indices because of read_qq4
-  field_btbc[:, :, 0] = (constants.vec11 * field_L1L2[:, :, 1] 
-                       + constants.vec12 * field_L1L2[:, :, 0])
-  field_btbc[:, :, 1] = (constants.vec21 * field_L1L2[:, :, 1] 
-                       + constants.vec22 * field_L1L2[:, :, 0])
+  field_btbc[:, :, 0] = (constants.vec11 * field_L1L2[:, :, 0] 
+                       + constants.vec12 * field_L1L2[:, :, 1])
+  field_btbc[:, :, 1] = (constants.vec21 * field_L1L2[:, :, 0] 
+                       + constants.vec22 * field_L1L2[:, :, 1])
 
   return field_btbc
   

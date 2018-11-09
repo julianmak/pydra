@@ -21,25 +21,25 @@ def plot_geom_mom_param(gamma_m_L1L2, phi_m_L1L2, gamma_m_btbc, phi_m_btbc, y_ve
 
   # layers
   ax = plt.subplot2grid((2, 4), (0, 0), colspan = 1)
-  ax.plot(gamma_m_L1L2[:, 0], y_vec)
+  ax.plot(gamma_m_L1L2[:, 1], y_vec)
   ax.set_xlim([0, 1.1])
   ax.set_title(r"$\gamma_{m, 1} (t = %g)$" % t_now)
   ax.grid()
 
   ax = plt.subplot2grid((2, 4), (1, 0), colspan = 1)
-  ax.plot(gamma_m_L1L2[:, 1], y_vec)
+  ax.plot(gamma_m_L1L2[:, 0], y_vec)
   ax.set_xlim([0, 1.1])
   ax.set_title(r"$\gamma_{m, 2} (t = %g)$" % t_now)
   ax.grid()
 
   ax = plt.subplot2grid((2, 4), (0, 2), colspan = 1)
-  ax.plot(phi_m_L1L2[:, 0] / np.pi, y_vec)
+  ax.plot(phi_m_L1L2[:, 1] / np.pi, y_vec)
   ax.set_xlim([-0.1, 1.1])
   ax.set_title(r"$\phi_{m, 1} / \pi (t = %g)$" % t_now)
   ax.grid()
 
   ax = plt.subplot2grid((2, 4), (1, 2), colspan = 1)
-  ax.plot(phi_m_L1L2[:, 1] / np.pi, y_vec)
+  ax.plot(phi_m_L1L2[:, 0] / np.pi, y_vec)
   ax.set_xlim([-0.1, 1.1])
   ax.set_title(r"$\phi_{m, 2} / \pi (t = %g)$" % t_now)
   ax.grid()
