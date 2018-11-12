@@ -127,20 +127,12 @@ def calc_eddy_buoy(data_dir, parameters, constants, kt):
 
 
 #-------------------------------------------------------------------------------
-# generate gamma_m and phi_m
+# generate the geometric parameters
 
-def calc_geom_mom(data_dir, parameters, constants, kt):
+def calc_geom_param(data_dir, parameters, constants, kt):
   """
-  Subfunction to generate 
-  
-    gamma_m = sqrt(M^2 + N^2) / K 
-  
-  and 
-  
-    cos 2 phi_m = - M / sqrt(M^2 + N^2)
-    
-  where M, N and K are now averaged (otherwise gamma_m is identically one for 
-  example).
+  Subfunction to generate the geometric factors as defined in Marshall et al.
+  (2012) (though mostly from Youngs et al., 2017)
   
   Input:
     data_dir    data directory
@@ -150,7 +142,15 @@ def calc_geom_mom(data_dir, parameters, constants, kt):
   
   Output:
     gamma_m_L1L2    1d field of gamma_m in layers
+    phi_m_L1L2      1d field of phi_m   in layers
     gamma_m_btbc    1d field of gamma_m in modes
+    phi_m_btbc      1d field of phi_m   in modes
+    gamma_b         1d field of gamma_b in layers
+    phi_b           1d field of phi_b   in layers
+    lam             1d field of lambda  in layers
+    K_L1L2          1d field of EKE     in layers
+    P               1d field of EPE     in layers
+    E_L1L2          1d field of E       in layers
   """
   
   K_L1L2, K_btbc, M_L1L2, N_L1L2, M_btbc, N_btbc = calc_eddy_mom(data_dir, parameters, constants, kt)
@@ -159,11 +159,45 @@ def calc_geom_mom(data_dir, parameters, constants, kt):
                 / np.maximum(zonal_ave(K_L1L2), 1e-16))
   gamma_m_btbc = (np.sqrt(zonal_ave(M_btbc) ** 2 + zonal_ave(N_btbc) ** 2)
                 / np.maximum(zonal_ave(K_btbc), 1e-16))
-                
+  
+  # 0 =< phi_m =< pi
   phi_m_L1L2   =  0.5 * np.arccos(-zonal_ave(M_L1L2) 
                 / np.maximum(np.sqrt(zonal_ave(M_L1L2) ** 2 + zonal_ave(N_L1L2) ** 2), 1e-16))
+#  phi_m_L1L2   =  0.5 * np.arcsin(zonal_ave(N_L1L2) 
+#                / np.maximum(np.sqrt(zonal_ave(M_L1L2) ** 2 + zonal_ave(N_L1L2) ** 2), 1e-16))
   phi_m_btbc   =  0.5 * np.arccos(-zonal_ave(M_btbc) 
                 / np.maximum(np.sqrt(zonal_ave(M_btbc) ** 2 + zonal_ave(N_btbc) ** 2), 1e-16))
 
-  return (gamma_m_L1L2, phi_m_L1L2, gamma_m_btbc, phi_m_btbc)
+                
+  # buoyancy anisotropy and angle
+  P, R, S = calc_eddy_buoy(data_dir, parameters, constants, kt)
+  
+  gamma_b = np.zeros(gamma_m_L1L2.shape)
+  gamma_b[:, 0] = np.sqrt(
+                 (zonal_ave(R) ** 2 + zonal_ave(S) ** 2) 
+                / np.maximum(zonal_ave(K_L1L2[:, :, 0]) * zonal_ave(P[:, :, 0]), 1e-16) 
+                / (2.0 * parameters.h1 * (1.0 - parameters.h1) * parameters.kdbar ** 2)
+                          )
+  gamma_b[:, 1] = np.sqrt(
+                 (zonal_ave(R) ** 2 + zonal_ave(S) ** 2) 
+                / np.maximum(zonal_ave(K_L1L2[:, :, 1]) * zonal_ave(P[:, :, 1]), 1e-16) 
+                / (2.0 * parameters.h1 * (1.0 - parameters.h1) * parameters.kdbar ** 2)
+                          )
+
+  # -pi =< phi_b =< pi
+  phi_b = np.arccos(zonal_ave(R) / np.sqrt(zonal_ave(R) ** 2 + zonal_ave(S) ** 2))
+#  phi_b = np.arcsin(zonal_ave(S) / np.sqrt(zonal_ave(R) ** 2 + zonal_ave(S) ** 2))
+
+  # total eddy energy and energy partition angle
+  E_L1L2 = K_L1L2 + P
+
+  # 0 =< lam =< pi / 2
+#  lam = np.arccos(np.sqrt(zonal_ave(K_L1L2) / np.maximum(zonal_ave(E_L1L2), 1e-16)))
+  lam = np.arctan(np.sqrt(zonal_ave(K_L1L2) / np.maximum(zonal_ave(P), 1e-16)))
+
+  return (gamma_m_L1L2, phi_m_L1L2, gamma_m_btbc, phi_m_btbc,
+          gamma_b     , phi_b     , lam         , 
+          K_L1L2      , P         , E_L1L2)
+  
+  
 
