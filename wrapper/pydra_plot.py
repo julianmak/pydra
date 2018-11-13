@@ -34,13 +34,13 @@ def plot_geom_mom_param(gamma_m_L1L2, phi_m_L1L2, gamma_m_btbc, phi_m_btbc, y_ve
 
   ax = plt.subplot2grid((2, 4), (0, 2), colspan = 1)
   ax.plot(phi_m_L1L2[:, 1] / np.pi, y_vec)
-  ax.set_xlim([-0.1, 1.1])
+  ax.set_xlim([-0.6, 0.6])
   ax.set_title(r"$\phi_{m, 1} / \pi (t = %g)$" % t_now)
   ax.grid()
 
   ax = plt.subplot2grid((2, 4), (1, 2), colspan = 1)
   ax.plot(phi_m_L1L2[:, 0] / np.pi, y_vec)
-  ax.set_xlim([-0.1, 1.1])
+  ax.set_xlim([-0.6, 0.6])
   ax.set_title(r"$\phi_{m, 2} / \pi (t = %g)$" % t_now)
   ax.grid()
 
@@ -61,12 +61,12 @@ def plot_geom_mom_param(gamma_m_L1L2, phi_m_L1L2, gamma_m_btbc, phi_m_btbc, y_ve
 
   ax = plt.subplot2grid((2, 4), (0, 3), colspan = 1)
   ax.plot(phi_m_btbc[:, 0] / np.pi, y_vec)
-  ax.set_xlim([-0.1, 1.1])
+  ax.set_xlim([-0.6, 0.6])
   ax.set_title(r"$\phi_{m, \rm{bt}} / \pi (t = %g)$" % t_now)
   ax.grid()
 
   ax = plt.subplot2grid((2, 4), (1, 3), colspan = 1)
   ax.plot(phi_m_btbc[:, 1] / np.pi, y_vec)
-  ax.set_xlim([-0.1, 1.1])
+  ax.set_xlim([-0.6, 0.6])
   ax.set_title(r"$\phi_{m, \rm{bc}} / \pi (t = %g)$" % t_now)
   ax.grid()

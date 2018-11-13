@@ -161,13 +161,11 @@ def calc_geom_param(data_dir, parameters, constants, kt):
                 / np.maximum(zonal_ave(K_btbc), 1e-16))
   
   # 0 =< phi_m =< pi
-  phi_m_L1L2   =  0.5 * np.arccos(-zonal_ave(M_L1L2) 
-                / np.maximum(np.sqrt(zonal_ave(M_L1L2) ** 2 + zonal_ave(N_L1L2) ** 2), 1e-16))
-#  phi_m_L1L2   =  0.5 * np.arcsin(zonal_ave(N_L1L2) 
-#                / np.maximum(np.sqrt(zonal_ave(M_L1L2) ** 2 + zonal_ave(N_L1L2) ** 2), 1e-16))
-  phi_m_btbc   =  0.5 * np.arccos(-zonal_ave(M_btbc) 
-                / np.maximum(np.sqrt(zonal_ave(M_btbc) ** 2 + zonal_ave(N_btbc) ** 2), 1e-16))
-
+  # make sure to use the atan2 to get the correct quadrant otherwise shifting
+  # by pi is required depending on the sign of the argument
+  # the minus sign on the M bit is important
+  phi_m_L1L2 = 0.5 * np.arctan2(zonal_ave(N_L1L2), -zonal_ave(M_L1L2))
+  phi_m_btbc = 0.5 * np.arctan2(zonal_ave(N_btbc), -zonal_ave(M_btbc))
                 
   # buoyancy anisotropy and angle
   P, R, S = calc_eddy_buoy(data_dir, parameters, constants, kt)
@@ -185,15 +183,18 @@ def calc_geom_param(data_dir, parameters, constants, kt):
                           )
 
   # -pi =< phi_b =< pi
-  phi_b = np.arccos(zonal_ave(R) / np.sqrt(zonal_ave(R) ** 2 + zonal_ave(S) ** 2))
-#  phi_b = np.arcsin(zonal_ave(S) / np.sqrt(zonal_ave(R) ** 2 + zonal_ave(S) ** 2))
+  # make sure to use the atan2 to get the correct quadrant otherwise shifting
+  # by pi is required depending on the sign of the argument
+  # NOTE: be careful of the angle on the boundary with atan2!
+  phi_b = np.arctan2(zonal_ave(S), zonal_ave(R))
 
   # total eddy energy and energy partition angle
   E_L1L2 = K_L1L2 + P
 
   # 0 =< lam =< pi / 2
-#  lam = np.arccos(np.sqrt(zonal_ave(K_L1L2) / np.maximum(zonal_ave(E_L1L2), 1e-16)))
-  lam = np.arctan(np.sqrt(zonal_ave(K_L1L2) / np.maximum(zonal_ave(P), 1e-16)))
+  # this one doesn't matter too much but be careful with having the things 
+  # the right way up!
+  lam = np.arctan2(np.sqrt(zonal_ave(P)), np.sqrt(zonal_ave(K_L1L2)))
 
   return (gamma_m_L1L2, phi_m_L1L2, gamma_m_btbc, phi_m_btbc,
           gamma_b     , phi_b     , lam         , 
