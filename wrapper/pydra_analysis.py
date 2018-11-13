@@ -129,6 +129,25 @@ def calc_eddy_buoy(data_dir, parameters, constants, kt):
 #-------------------------------------------------------------------------------
 # generate the geometric parameters
 
+class geom_data:
+  """
+  strcuture containing geometric parameters where M, N, R, S, P, K have been
+  zonally averaged:
+      gamma_m_L1L2    1d field of gamma_m in layers
+      phi_m_L1L2      1d field of phi_m   in layers
+      gamma_m_btbc    1d field of gamma_m in modes
+      phi_m_btbc      1d field of phi_m   in modes
+      gamma_b         1d field of gamma_b in layers
+      phi_b           1d field of phi_b   in layers
+      gamma_t         1d field of gamma_t in layers
+      phi_t           1d field of phi_t   in layers
+      lam             1d field of lambda  in layers
+      K_L1L2          1d field of EKE     in layers
+      P               1d field of EPE     in layers
+      E_L1L2          1d field of E       in layers
+  """
+  name = "zonal averaged geometric data"
+
 def calc_geom_param(data_dir, parameters, constants, kt):
   """
   Subfunction to generate the geometric factors as defined in Marshall et al.
@@ -141,64 +160,80 @@ def calc_geom_param(data_dir, parameters, constants, kt):
     kt          time stamp
   
   Output:
-    gamma_m_L1L2    1d field of gamma_m in layers
-    phi_m_L1L2      1d field of phi_m   in layers
-    gamma_m_btbc    1d field of gamma_m in modes
-    phi_m_btbc      1d field of phi_m   in modes
-    gamma_b         1d field of gamma_b in layers
-    phi_b           1d field of phi_b   in layers
-    lam             1d field of lambda  in layers
-    K_L1L2          1d field of EKE     in layers
-    P               1d field of EPE     in layers
-    E_L1L2          1d field of E       in layers
+    data_geom       a structure, containing
+      gamma_m_L1L2    1d field of gamma_m in layers
+      phi_m_L1L2      1d field of phi_m   in layers
+      gamma_m_btbc    1d field of gamma_m in modes
+      phi_m_btbc      1d field of phi_m   in modes
+      gamma_b         1d field of gamma_b in layers
+      phi_b           1d field of phi_b   in layers
+      gamma_t         1d field of gamma_t in layers
+      phi_t           1d field of phi_t   in layers
+      lam             1d field of lambda  in layers
+      K_L1L2          1d field of EKE     in layers
+      P               1d field of EPE     in layers
+      E_L1L2          1d field of E       in layers
   """
+  
+  data_geom = geom_data()
   
   K_L1L2, K_btbc, M_L1L2, N_L1L2, M_btbc, N_btbc = calc_eddy_mom(data_dir, parameters, constants, kt)
   
-  gamma_m_L1L2 = (np.sqrt(zonal_ave(M_L1L2) ** 2 + zonal_ave(N_L1L2) ** 2)
-                / np.maximum(zonal_ave(K_L1L2), 1e-16))
-  gamma_m_btbc = (np.sqrt(zonal_ave(M_btbc) ** 2 + zonal_ave(N_btbc) ** 2)
-                / np.maximum(zonal_ave(K_btbc), 1e-16))
+  data_geom.gamma_m_L1L2 = (
+                np.sqrt(zonal_ave(M_L1L2) ** 2 + zonal_ave(N_L1L2) ** 2)
+              / np.maximum(zonal_ave(K_L1L2), 1e-16)
+                           )
+  data_geom.gamma_m_btbc = (
+                np.sqrt(zonal_ave(M_btbc) ** 2 + zonal_ave(N_btbc) ** 2)
+              / np.maximum(zonal_ave(K_btbc), 1e-16)
+                           )
   
   # 0 =< phi_m =< pi
   # make sure to use the atan2 to get the correct quadrant otherwise shifting
   # by pi is required depending on the sign of the argument
   # the minus sign on the M bit is important
-  phi_m_L1L2 = 0.5 * np.arctan2(zonal_ave(N_L1L2), -zonal_ave(M_L1L2))
-  phi_m_btbc = 0.5 * np.arctan2(zonal_ave(N_btbc), -zonal_ave(M_btbc))
+  data_geom.phi_m_L1L2 = 0.5 * np.arctan2(zonal_ave(N_L1L2), -zonal_ave(M_L1L2))
+  data_geom.phi_m_btbc = 0.5 * np.arctan2(zonal_ave(N_btbc), -zonal_ave(M_btbc))
                 
   # buoyancy anisotropy and angle
   P, R, S = calc_eddy_buoy(data_dir, parameters, constants, kt)
   
-  gamma_b = np.zeros(gamma_m_L1L2.shape)
-  gamma_b[:, 0] = np.sqrt(
+  data_geom.gamma_b       = np.zeros(data_geom.gamma_m_L1L2.shape)
+  data_geom.gamma_b[:, 0] = np.sqrt(
                  (zonal_ave(R) ** 2 + zonal_ave(S) ** 2) 
                 / np.maximum(zonal_ave(K_L1L2[:, :, 0]) * zonal_ave(P[:, :, 0]), 1e-16) 
                 / (2.0 * parameters.h1 * (1.0 - parameters.h1) * parameters.kdbar ** 2)
-                          )
-  gamma_b[:, 1] = np.sqrt(
+                                   )
+  data_geom.gamma_b[:, 1] = np.sqrt(
                  (zonal_ave(R) ** 2 + zonal_ave(S) ** 2) 
                 / np.maximum(zonal_ave(K_L1L2[:, :, 1]) * zonal_ave(P[:, :, 1]), 1e-16) 
                 / (2.0 * parameters.h1 * (1.0 - parameters.h1) * parameters.kdbar ** 2)
-                          )
+                                   )
 
   # -pi =< phi_b =< pi
   # make sure to use the atan2 to get the correct quadrant otherwise shifting
   # by pi is required depending on the sign of the argument
   # NOTE: be careful of the angle on the boundary with atan2!
-  phi_b = np.arctan2(zonal_ave(S), zonal_ave(R))
+  data_geom.phi_b = np.arctan2(zonal_ave(S), zonal_ave(R))
 
   # total eddy energy and energy partition angle
-  E_L1L2 = K_L1L2 + P
+  data_geom.K_L1L2 = zonal_ave(K_L1L2)
+  data_geom.P      = zonal_ave(P)
+  data_geom.E_L1L2 = zonal_ave(K_L1L2 + P)
 
   # 0 =< lam =< pi / 2
   # this one doesn't matter too much but be careful with having the things 
   # the right way up!
-  lam = np.arctan2(np.sqrt(zonal_ave(P)), np.sqrt(zonal_ave(K_L1L2)))
+  data_geom.lam = np.arctan2(np.sqrt(zonal_ave(P)), np.sqrt(zonal_ave(K_L1L2)))
+  
+  # project onto x-z plane
+  data_geom.phi_t   = 0.5 * np.arctan(data_geom.gamma_b * np.tan(2.0 * data_geom.lam))
+  data_geom.gamma_t = np.cos(2.0 * data_geom.lam) / np.maximum(np.cos(2.0 * data_geom.phi_t), 1e-16)
 
-  return (gamma_m_L1L2, phi_m_L1L2, gamma_m_btbc, phi_m_btbc,
-          gamma_b     , phi_b     , lam         , 
-          K_L1L2      , P         , E_L1L2)
+  return data_geom
+  
+#TODO: write a function does the processed data to generate e.g. alpha etc
+#      but also plot the e.g. sin(phi_b) and gamma and so forth
   
   
 
